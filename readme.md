@@ -1,5 +1,5 @@
 # Smart Parking Management System 🚗🏢
-A comprehensive parking management solution built in Java that provides both CLI and GUI interfaces for efficient parking operations. The system manages multi-floor parking facilities with support for different vehicle types and automated fee calculation.
+
 
 ## 🌟 Features
 
@@ -16,6 +16,11 @@ A comprehensive parking management solution built in Java that provides both CLI
 - **Command Line Interface (CLI)**: Terminal-based interaction for quick operations
 - **Graphical User Interface (GUI)**: Swing-based visual interface with real-time slot visualization
 
+### Advanced Features
+- **Exception Handling**: Comprehensive error management for edge cases
+- **Validation System**: Input validation for registration numbers and vehicle data
+- **Occupancy Tracking**: Real-time monitoring of parking space utilization
+- **Time-Based Pricing**: Hourly rate calculation with entry/exit timestamps
 
 ## 🏗️ System Architecture
 
@@ -47,19 +52,19 @@ Smart Parking System
 ### Installation
 
 1. **Clone the repository**
-   
+   ```bash
    git clone https://github.com/Varun2526/smart-parking.git
    cd smart-parking
-   
+   ```
 
 2. **Compile the project**
-   
+   ```bash
    # Create output directory
    mkdir -p out
    
    # Compile all Java files
    javac -d out src/**/*.java
-   
+   ```
 
 ### Running the Application
 
@@ -173,16 +178,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 This project is open source and available under the [MIT License](LICENSE).
 
-## 🔮 Future Enhancements
 
-- [ ] Database integration (PostgreSQL/MySQL)
-- [ ] REST API endpoints
-- [ ] Web-based interface
-- [ ] Mobile app integration
-- [ ] Payment gateway integration
-- [ ] Reservation system
-- [ ] Analytics dashboard
-- [ ] Multi-language support
 
 ## 📞 Support
 
