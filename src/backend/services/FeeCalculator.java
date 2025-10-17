@@ -6,44 +6,42 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * Service to calculate parking fees based on entry and exit times and vehicle type rates.
+ * Service to calculate parking fees based on vehicle type and parking duration.
  */
 public class FeeCalculator {
 
-    private static final int GRACE_PERIOD_MINUTES = 10;  // First 10 minutes free
-    private static final int MINIMUM_CHARGE_HOURS = 1;   // Minimum charge is 1 hour
+    private static final int GRACE_PERIOD_MINUTES = 10;  // 10 minutes free
+    private static final int MINIMUM_CHARGE_HOURS = 1;   // minimum charge, 1 hour
 
     /**
-     * Calculates the fee for parking a vehicle based on entry and exit times.
+     * Calculate parking fee.
      *
-     * @param vehicle the vehicle whose rate is used
-     * @param entryTime the entry LocalDateTime
-     * @param exitTime the exit LocalDateTime
-     * @return total fee in rupees
-     * @throws IllegalArgumentException if exitTime is before entryTime
+     * @param vehicle   parked vehicle
+     * @param entryTime time vehicle entered
+     * @param exitTime  time vehicle exited
+     * @return fee payable in rupees
      */
     public int calculateFee(Vehicle vehicle, LocalDateTime entryTime, LocalDateTime exitTime) {
         if (exitTime.isBefore(entryTime)) {
             throw new IllegalArgumentException("Exit time cannot be before entry time");
         }
 
-        long durationMinutes = Duration.between(entryTime, exitTime).toMinutes();
+        long totalMinutes = Duration.between(entryTime, exitTime).toMinutes();
 
-        // Deduct grace period
-        long billableMinutes = durationMinutes - GRACE_PERIOD_MINUTES;
+        // Subtract grace period
+        long billableMinutes = totalMinutes - GRACE_PERIOD_MINUTES;
         if (billableMinutes < 0) {
             billableMinutes = 0;
         }
 
-        // Calculate total hours, rounding up fractional hours
+        // Calculate billable hours, round up partial hours
         long billableHours = (billableMinutes + 59) / 60;
 
-        // Minimum charge applies
+        // Ensure minimum charge applies
         billableHours = Math.max(billableHours, MINIMUM_CHARGE_HOURS);
 
-        int ratePerHour = vehicle.getHourlyRate();
+        int hourlyRate = vehicle.getHourlyRate();
 
-        return (int) (billableHours * ratePerHour);
+        return (int) (billableHours * hourlyRate);
     }
 }
-

@@ -4,8 +4,7 @@ import backend.exceptions.InvalidTokenException;
 import backend.exceptions.SlotNotAvailableException;
 import backend.exceptions.VehicleNotFoundException;
 import backend.models.*;
-
-import java.time.LocalDateTime;
+import backend.utils.TokenStorage;
 import java.util.*;
 
 /**
@@ -44,10 +43,18 @@ public class ParkingService {
         if (vehicleSlotMap.containsKey(regNo)) {
             throw new IllegalArgumentException("Vehicle with registration " + regNo + " is already parked");
         }
+
         ParkingSlot slot = slotAllocator.findBestSlot(vehicle, floors);
         slot.parkVehicle(vehicle);
 
         Token token = new Token(slot.getSlotId(), regNo);
+
+        // ============================
+        // Save token to file for persistence
+        // ============================
+        TokenStorage.saveToken(token);
+        System.out.println("Token saved: " + token.getTokenId() + " | Vehicle: " + regNo + " | Slot: " + slot.getSlotId());
+
         activeTokens.put(token.getTokenId(), token);
         vehicleSlotMap.put(regNo, slot);
 
@@ -61,24 +68,35 @@ public class ParkingService {
      * @throws InvalidTokenException if token invalid or already used
      */
     public synchronized int exitVehicle(String tokenId) throws InvalidTokenException {
-        Token token = activeTokens.get(tokenId);
-        if (token == null) {
-            throw new InvalidTokenException(tokenId);
-        }
-        if (token.getExitTime() != null) {
-            throw new InvalidTokenException("Token " + tokenId + " has already been used to exit");
-        }
-
-        token.recordExit();
-        ParkingSlot slot = findSlotById(token.getSlotId());
-        Vehicle vehicle = slot.getParkedVehicle();
-        slot.freeSlot();
-
-        vehicleSlotMap.remove(vehicle.getRegistrationNumber());
-        activeTokens.remove(tokenId);
-
-        return feeCalculator.calculateFee(vehicle, token.getEntryTime(), token.getExitTime());
+    Token token = activeTokens.get(tokenId);
+    if (token == null) {
+        throw new InvalidTokenException(tokenId);
     }
+    if (token.getExitTime() != null) {
+        throw new InvalidTokenException("Token " + tokenId + " has already been used to exit");
+    }
+
+    // Record the exit time
+    token.recordExit();
+
+    // Find slot by ID
+    ParkingSlot slot = findSlotById(token.getSlotId());
+
+    // Get the vehicle parked in the slot
+    Vehicle vehicle = slot.getParkedVehicle();
+
+    // Free the parking slot
+    slot.freeSlot();
+
+    // Remove vehicle from vehicle to slot lookup
+    vehicleSlotMap.remove(vehicle.getRegistrationNumber());
+
+    // Remove token from active tokens
+    activeTokens.remove(tokenId);
+
+    // Calculate parking fee
+    return feeCalculator.calculateFee(vehicle, token.getEntryTime(), token.getExitTime());
+}
 
     /**
      * Searches for a parked vehicle by registration number.
@@ -100,11 +118,9 @@ public class ParkingService {
     public List<ParkingFloor> getFloors() {
         return Collections.unmodifiableList(floors);
     }
+
     /**
-     * Finds a parking slot by its ID across all floors.
-     * @param slotId unique slot identifier
-     * @return ParkingSlot with the given ID
-     * @throws InvalidTokenException if slot not found
+     * Helper to find slot by its ID across all floors.
      */
     private ParkingSlot findSlotById(String slotId) throws InvalidTokenException {
         for (ParkingFloor floor : floors) {
@@ -116,4 +132,27 @@ public class ParkingService {
         }
         throw new InvalidTokenException("Parking slot not found: " + slotId);
     }
+    public synchronized String getAllParkedVehiclesInfo() {
+    StringBuilder sb = new StringBuilder();
+    if (activeTokens.isEmpty()) {
+        sb.append("No vehicles currently parked.");
+    } else {
+        for (Token token : activeTokens.values()) {
+            sb.append("Registration: ").append(token.getVehicleRegNumber())
+              .append("\nSlot: ").append(token.getSlotId())
+              .append("\nToken: ").append(token.getTokenId())
+              .append("\n--------------------\n");
+        }
+    }
+    return sb.toString();
+}
+public synchronized int calculateFeeForToken(String tokenId, java.time.LocalDateTime entryTime, java.time.LocalDateTime exitTime) throws InvalidTokenException {
+    Token token = activeTokens.get(tokenId);
+    if (token == null) {
+        throw new InvalidTokenException(tokenId);
+    }
+    Vehicle vehicle = findSlotById(token.getSlotId()).getParkedVehicle();
+    return feeCalculator.calculateFee(vehicle, entryTime, exitTime);
+}
+
 }
