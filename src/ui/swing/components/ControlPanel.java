@@ -1,6 +1,4 @@
 package ui.swing.components;
-
-import backend.exceptions.InvalidTokenException;
 import backend.exceptions.SlotNotAvailableException;
 import backend.models.Vehicle;
 import backend.models.TwoWheeler;
@@ -12,7 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * ControlPanel with spinner-based parking duration input for fee calculation.
+ * ControlPanel with spinner-based parking duration input for consistent fee calculation and exit.
  */
 public class ControlPanel extends JPanel {
 
@@ -25,6 +23,10 @@ public class ControlPanel extends JPanel {
     private JSpinner hourSpinner;
     private JSpinner minuteSpinner;
     private JTextArea statusArea;
+
+    // Store last calculated entry and exit times to use in exit call
+    private java.time.LocalDateTime lastCalculatedEntryTime;
+    private java.time.LocalDateTime lastCalculatedExitTime;
 
     public ControlPanel(ParkingService parkingService, Runnable refreshCallback) {
         this.parkingService = parkingService;
@@ -83,13 +85,13 @@ public class ControlPanel extends JPanel {
         add(Box.createVerticalStrut(10));
         add(new JLabel("Hours Parked:"));
         add(Box.createVerticalStrut(5));
-        hourSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 23, 1)); 
+        hourSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 23, 1));
         add(hourSpinner);
 
         add(Box.createVerticalStrut(10));
         add(new JLabel("Minutes Parked:"));
         add(Box.createVerticalStrut(5));
-        minuteSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 59, 1)); 
+        minuteSpinner = new JSpinner(new SpinnerNumberModel(0, 0, 59, 1));
         add(minuteSpinner);
 
         add(Box.createVerticalStrut(10));
@@ -193,6 +195,10 @@ public class ControlPanel extends JPanel {
 
             int fee = parkingService.calculateFeeForToken(tokenId, entryTime, exitTime);
 
+            // Save these times to reuse when exiting vehicle
+            lastCalculatedEntryTime = entryTime;
+            lastCalculatedExitTime = exitTime;
+
             showInfo("Parking Fee: ₹" + fee + "\nEntry: " + entryTime + "\nExit: " + exitTime);
 
         } catch (backend.exceptions.InvalidTokenException e) {
@@ -208,7 +214,14 @@ public class ControlPanel extends JPanel {
                 return;
             }
 
-            int fee = parkingService.exitVehicle(tokenId);
+            int fee;
+            if (lastCalculatedEntryTime != null && lastCalculatedExitTime != null) {
+                // Use previously calculated times for exit to keep fee consistent
+                fee = parkingService.exitVehicleWithTimes(tokenId, lastCalculatedEntryTime, lastCalculatedExitTime);
+            } else {
+                // If no prior calculation done, use default exit logic (current time)
+                fee = parkingService.exitVehicle(tokenId);
+            }
 
             String message = "Vehicle exited successfully!\nParking Fee: ₹" + fee;
             showInfo(message);
@@ -216,6 +229,8 @@ public class ControlPanel extends JPanel {
             tokenField.setText("");
             hourSpinner.setValue(0);
             minuteSpinner.setValue(0);
+            lastCalculatedEntryTime = null;
+            lastCalculatedExitTime = null;
             refreshCallback.run();
             updateStatusArea();
 
@@ -236,4 +251,5 @@ public class ControlPanel extends JPanel {
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
+    
 }

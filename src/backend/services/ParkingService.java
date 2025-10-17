@@ -97,6 +97,29 @@ public class ParkingService {
     // Calculate parking fee
     return feeCalculator.calculateFee(vehicle, token.getEntryTime(), token.getExitTime());
 }
+public synchronized int exitVehicleWithTimes(String tokenId, java.time.LocalDateTime entryTime, java.time.LocalDateTime exitTime) throws InvalidTokenException {
+    Token token = activeTokens.get(tokenId);
+    if (token == null) {
+        throw new InvalidTokenException(tokenId);
+    }
+    if (token.getExitTime() != null) {
+        throw new InvalidTokenException("Token " + tokenId + " has already been used to exit");
+    }
+
+    // Set the entry and exit timestamps on the token
+    token.setEntryTime(entryTime);
+    token.setExitTime(exitTime);
+
+    ParkingSlot slot = findSlotById(token.getSlotId());
+    Vehicle vehicle = slot.getParkedVehicle();
+
+    slot.freeSlot();
+    vehicleSlotMap.remove(vehicle.getRegistrationNumber());
+    activeTokens.remove(tokenId);
+
+    return feeCalculator.calculateFee(vehicle, entryTime, exitTime);
+}
+
 
     /**
      * Searches for a parked vehicle by registration number.

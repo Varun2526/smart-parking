@@ -12,7 +12,7 @@ public class Token {
     private final String tokenId;             // Unique token identifier (UUID)
     private final String slotId;              // Associated ParkingSlot ID
     private final String vehicleRegNumber;    // Vehicle registration number
-    private final LocalDateTime entryTime;    // Timestamp of entry
+    private LocalDateTime entryTime;          // Timestamp of entry
     private LocalDateTime exitTime;           // Timestamp of exit, null until exit
 
     /**
@@ -119,5 +119,22 @@ public class Token {
     @Override
     public int hashCode() {
         return Objects.hash(tokenId);
+    }
+
+    public void setExitTime(LocalDateTime exitTime) {
+        if (this.exitTime != null) {
+            throw new IllegalStateException("Exit time already recorded for token " + tokenId);
+        }
+        if (exitTime == null) {
+            throw new IllegalArgumentException("Exit time cannot be null");
+        }
+        this.exitTime = exitTime;
+    }
+
+    public void setEntryTime(LocalDateTime entryTime) {
+        if (entryTime == null) {
+            throw new IllegalArgumentException("Entry time cannot be null");
+        }
+        this.entryTime = entryTime;
     }
 }

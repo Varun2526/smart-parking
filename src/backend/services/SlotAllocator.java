@@ -4,8 +4,6 @@ import backend.exceptions.SlotNotAvailableException;
 import backend.models.ParkingFloor;
 import backend.models.ParkingSlot;
 import backend.models.Vehicle;
-
-import java.util.Comparator;
 import java.util.List;
 
 /**
